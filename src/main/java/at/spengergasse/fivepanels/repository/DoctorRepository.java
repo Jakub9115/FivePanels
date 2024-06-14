@@ -12,7 +12,7 @@ public interface DoctorRepository extends JpaRepository<Doctor, UUID> {
 
     Optional<Doctor> findById(UUID uuid);
 
-    Optional<Doctor> findByEmail(String email);
+    Doctor findByEmail(String email);
 
     boolean existsByEmail(String email);
 }

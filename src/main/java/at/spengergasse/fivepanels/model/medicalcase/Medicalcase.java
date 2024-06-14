@@ -4,8 +4,7 @@ import at.spengergasse.fivepanels.model.doctor.Doctor;
 import at.spengergasse.fivepanels.model.messenger.Chat;
 import at.spengergasse.fivepanels.model.common.BaseEntity;
 import at.spengergasse.fivepanels.model.common.Content;
-//import repository.MedicalcaseRepository;
-//import repository.UserRepository;
+import at.spengergasse.fivepanels.repository.DoctorRepository;
 
 import static at.spengergasse.fivepanels.foundation.Assert.*;
 
@@ -37,26 +36,39 @@ public class Medicalcase extends BaseEntity {
     // not null, all members of medicalcase are automatically in this chat
     private Chat chat;
 
-    /**
-     * Constructs a new {@link Medicalcase} instance with the specified title, owner, name, and tags.
-     * Also initializes the medicalcase's content, member, reaction, votingOptions, votes, chat and correctAnswer.
-     *
-     * @param title    the medicalcase's titles
-     * @param owner    the medicalcase's owner
-     * @param tags     the medicalcase's tags
-     */
-    public Medicalcase(String title, Doctor owner, String... tags) {
-        setTitle(title);
-        setOwner(owner);
+//    /**
+//     * Constructs a new {@link Medicalcase} instance with the specified title, owner, name, and tags.
+//     * Also initializes the medicalcase's content, member, reaction, votingOptions, votes, chat and correctAnswer.
+//     *
+//     * @param title    the medicalcase's titles
+//     * @param owner    the medicalcase's owner
+//     * @param tags     the medicalcase's tags
+//     */
+//    public Medicalcase(String title, Doctor owner, String... tags) {
+//        setTitle(title);
+//        setOwner(owner);
+//        this.content = new LinkedList<>();
+//        this.members = new HashSet<>();
+//        this.reactions = new HashSet<>();
+//        setTags(tags);
+//        this.votingOptions = new LinkedHashSet<>();
+//        this.votes = new HashMap<>();
+//        this.chat = new Chat(title, Set.of(owner.getId()), true);
+//        this.correctAnswer = null;
+//        MedicalcaseRepository.save(this);
+//    }
+
+    public Medicalcase() {
+        this.title = null;
+        this.owner = null;
         this.content = new LinkedList<>();
         this.members = new HashSet<>();
         this.reactions = new HashSet<>();
-        setTags(tags);
+        this.tags = null;
         this.votingOptions = new LinkedHashSet<>();
         this.votes = new HashMap<>();
-        this.chat = new Chat(title, Set.of(owner.getId()), true);
+        this.chat = null;
         this.correctAnswer = null;
-        MedicalcaseRepository.save(this);
     }
 
     public void setTitle(String title) {
@@ -87,19 +99,24 @@ public class Medicalcase extends BaseEntity {
         Arrays.stream(tags).forEach(this::addTag);
     }
 
-    public void setCorrectAnswer(Answer correctAnswer) {
-        if (!published)
-            throw new MedicalcaseException(STR."setCorrectAnswer(): can not set correctAnswer in non public medicalcase");
-        isNotNull(correctAnswer, "correctAnswer");
-        if (!(votingOptions.contains(correctAnswer))) {
-            throw new MedicalcaseException(STR."setCorrectAnswer(): correctAnswer has to be in the votingOption!");
-        }
-        this.correctAnswer = correctAnswer;
-        evaluateVotes();
-    }
-
     public Chat getChat() {
         return chat;
+    }
+
+    public Map<UUID, Set<Vote>> getVotes() {
+        return votes;
+    }
+
+    public Answer getCorrectAnswer() {
+        return correctAnswer;
+    }
+
+    public boolean isPublished() {
+        return published;
+    }
+
+    public Set<Answer> getVotingOptions() {
+        return votingOptions;
     }
 
     public void addTag(String tag) {
@@ -127,6 +144,10 @@ public class Medicalcase extends BaseEntity {
 
         members.add(doctor);
         chat.addMember(owner, doctor);
+    }
+
+    public void setCorrectAnswer(Answer correctAnswer) {
+        this.correctAnswer = correctAnswer;
     }
 
     public void publish() {
@@ -242,48 +263,5 @@ public class Medicalcase extends BaseEntity {
         if (votes.get(doctor.getId()).stream().anyMatch(vote -> vote.getAnswer().getAnswer().equals(answer)))
             throw new MedicalcaseException(STR."castVote(): can not vote same answer twice");
         votes.get(doctor.getId()).add(new Vote(percentage, newAnswer));
-    }
-
-    public void evaluateVotes() {
-        //gibt die User zurück die für die richtige antwort gevotet haben.
-        Map<UUID, Vote> userWithCorrectAnswer = votes.entrySet().stream()
-                .flatMap(entry -> entry.getValue().stream()
-                        .filter(vote -> correctAnswer.getAnswer().equals(vote.getAnswer().getAnswer()))
-                        .map(vote -> Map.entry(entry.getKey(), vote)))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-        //addiert die Prozentzahl die der user für die richtige antwort angegeben hat zu seinem rating.
-        // was ich gemacht habe:
-        //userAndCorrectAnswer.entrySet().forEach(value -> UserRepository.findById(value.getKey()).ifPresent(user -> user.getProfile().setRating(value.getValue().getPercentage())));
-        //Verbessert durch IDE
-        userWithCorrectAnswer.forEach((key, value1) -> UserRepository.findById(key).ifPresent(user -> user.getProfile().addRating(value1.getPercentage())));
-    }
-
-    public void viewChat(Doctor doctor) {
-        chat.viewChat(doctor);
-    }
-
-    public static void main(String[] args) {
-        Doctor homer = new Doctor("homer@simpson.com","spengergasse".toCharArray(), "Homer Simpson", "Rh.D.", "United Kingdom");
-        Doctor bart = new Doctor("bart@simpson.com",  "spengergasse".toCharArray(), "Bart Simpson", "Ph.D.", "United States");
-        Doctor lisa = new Doctor("lisa@simpson.com",  "spengergasse".toCharArray(), "Lisa Simpson", "Ph.D.", "United States");
-        Doctor test = new Doctor("test@simpson.com",  "spengergasse".toCharArray(), "test Simpson", "Ph.D.", "United States");
-        homer.addFriend(bart);
-        bart.acceptFriendRequest(homer);
-
-        homer.createMedicalcase("Test");
-        Medicalcase medicalcase = MedicalcaseRepository.findAll().stream().findFirst().get();
-        medicalcase.addVotingOption("aids");
-        medicalcase.addVotingOption("cancer");
-        medicalcase.addVotingOption("idk");
-        medicalcase.publish();
-        medicalcase.addMember(bart);
-        medicalcase.addMember(lisa);
-        medicalcase.castVote(lisa, "aids", 20);
-        medicalcase.castVote(lisa, "cancer", 50);
-        //medicalcase.castVote(bart, "aids", 0);
-        medicalcase.castVote(bart, "cancer", 90);
-        // summe von votes per User muss 100% ergeben
-        medicalcase.viewAvgVotesPerAnswer();
     }
 }

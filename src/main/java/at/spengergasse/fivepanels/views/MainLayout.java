@@ -1,6 +1,7 @@
 package at.spengergasse.fivepanels.views;
 
 import at.spengergasse.fivepanels.data.User;
+import at.spengergasse.fivepanels.model.doctor.Doctor;
 import at.spengergasse.fivepanels.security.AuthenticatedUser;
 import at.spengergasse.fivepanels.views.empty.EmptyView;
 import com.vaadin.flow.component.applayout.AppLayout;
@@ -62,7 +63,7 @@ public class MainLayout extends AppLayout {
 
         Scroller scroller = new Scroller(createNavigation());
 
-        addToDrawer(header, scroller, createFooter());
+        addToDrawer(header, scroller/*,createFooter()*/);
     }
 
     private SideNav createNavigation() {
@@ -76,44 +77,44 @@ public class MainLayout extends AppLayout {
         return nav;
     }
 
-    private Footer createFooter() {
-        Footer layout = new Footer();
-
-        Optional<User> maybeUser = authenticatedUser.get();
-        if (maybeUser.isPresent()) {
-            User user = maybeUser.get();
-
-            Avatar avatar = new Avatar(user.getName());
-            StreamResource resource = new StreamResource("profile-pic",
-                    () -> new ByteArrayInputStream(user.getProfilePicture()));
-            avatar.setImageResource(resource);
-            avatar.setThemeName("xsmall");
-            avatar.getElement().setAttribute("tabindex", "-1");
-
-            MenuBar userMenu = new MenuBar();
-            userMenu.setThemeName("tertiary-inline contrast");
-
-            MenuItem userName = userMenu.addItem("");
-            Div div = new Div();
-            div.add(avatar);
-            div.add(user.getName());
-            div.add(new Icon("lumo", "dropdown"));
-            div.getElement().getStyle().set("display", "flex");
-            div.getElement().getStyle().set("align-items", "center");
-            div.getElement().getStyle().set("gap", "var(--lumo-space-s)");
-            userName.add(div);
-            userName.getSubMenu().addItem("Sign out", e -> {
-                authenticatedUser.logout();
-            });
-
-            layout.add(userMenu);
-        } else {
-            Anchor loginLink = new Anchor("login", "Sign in");
-            layout.add(loginLink);
-        }
-
-        return layout;
-    }
+//    private Footer createFooter() {
+//        Footer layout = new Footer();
+//
+//        Optional<Doctor> maybeUser = authenticatedUser.get();
+//        if (maybeUser.isPresent()) {
+//            Doctor user = maybeUser.get();
+//
+//            Avatar avatar = new Avatar(user.getName());
+//            StreamResource resource = new StreamResource("profile-pic",
+//                    () -> new ByteArrayInputStream(user.getProfilePicture()));
+//            avatar.setImageResource(resource);
+//            avatar.setThemeName("xsmall");
+//            avatar.getElement().setAttribute("tabindex", "-1");
+//
+//            MenuBar userMenu = new MenuBar();
+//            userMenu.setThemeName("tertiary-inline contrast");
+//
+//            MenuItem userName = userMenu.addItem("");
+//            Div div = new Div();
+//            div.add(avatar);
+//            div.add(user.getName());
+//            div.add(new Icon("lumo", "dropdown"));
+//            div.getElement().getStyle().set("display", "flex");
+//            div.getElement().getStyle().set("align-items", "center");
+//            div.getElement().getStyle().set("gap", "var(--lumo-space-s)");
+//            userName.add(div);
+//            userName.getSubMenu().addItem("Sign out", e -> {
+//                authenticatedUser.logout();
+//            });
+//
+//            layout.add(userMenu);
+//        } else {
+//            Anchor loginLink = new Anchor("login", "Sign in");
+//            layout.add(loginLink);
+//        }
+//
+//        return layout;
+//    }
 
     @Override
     protected void afterNavigation() {

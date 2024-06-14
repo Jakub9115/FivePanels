@@ -9,7 +9,7 @@ import at.spengergasse.fivepanels.model.medicalcase.Medicalcase;
 import at.spengergasse.fivepanels.model.common.Content;
 import at.spengergasse.fivepanels.model.common.Media;
 import at.spengergasse.fivepanels.model.common.TextContent;
-import jakarta.persistence.Entity;
+import jakarta.persistence.*;
 //import repository.ChatRepository;
 //import repository.UserRepository;
 
@@ -34,38 +34,47 @@ public class Doctor extends BaseEntity {
     private Socials socials;
     private boolean verified;
     // not null
+    @OneToMany
+    @JoinColumn(name = "chat_id", nullable = false)
     private Set<Chat> chats;
     // not null, exactly 2 entries
     private Map<Ownership, Set<Medicalcase>> medicalcases;
 
     public Doctor() {
+        this.email = null;
+        this.hashedPassword = null;
+        this.profile = null;
+        this.socials = null;
+        this.verified = false;
+        this.chats = new HashSet<>();
+        setMedicalcases();
     }
 
-    /**
-     * Constructs a new {@link Doctor} instance with the specified email, password, name, title, and location.
-     * Also initializes the user's socials, chats, and medicalcases.
-     *
-     * @param email    the user's email address
-     * @param password the user's password
-     * @param name     the user's name
-     * @param title    the user's title
-     * @param location the user's location
-     */
-    public Doctor(String email, char[] password, String name, String title, String location) {
-        try {
-            this.email = new Email(email);
-            this.hashedPassword = new Password(password);
-            this.profile = new Profile(name, title, location);
-            this.socials = new Socials();
-            this.chats = new LinkedHashSet<>();
-            setMedicalcases();
-            UserRepository.save(this);
-        } finally {
-            for (int i = 0; i < password.length; i++) {
-                password[i] = 0;
-            }
-        }
-    }
+//    /**
+//     * Constructs a new {@link Doctor} instance with the specified email, password, name, title, and location.
+//     * Also initializes the user's socials, chats, and medicalcases.
+//     *
+//     * @param email    the user's email address
+//     * @param password the user's password
+//     * @param name     the user's name
+//     * @param title    the user's title
+//     * @param location the user's location
+//     */
+//    public Doctor(String email, char[] password, String name, String title, String location) {
+//        try {
+//            this.email = new Email(email);
+//            this.hashedPassword = new Password(password);
+//            this.profile = new Profile(name, title, location);
+//            this.socials = new Socials();
+//            this.chats = new LinkedHashSet<>();
+//            setMedicalcases();
+//            UserRepository.save(this);
+//        } finally {
+//            for (int i = 0; i < password.length; i++) {
+//                password[i] = 0;
+//            }
+//        }
+//    }
 
     /**
      * Verifies the user.
@@ -275,110 +284,110 @@ public class Doctor extends BaseEntity {
         this.socials.removeFriend(this, doctor);
     }
 
-    /**
-     * Creates a new medicalcase with the specified title and tags.
-     * This method adds a new {@link Medicalcase} instance to the list of medicalcases. The current user is the owner of that medicalcase
-     *
-     * @param title the title of the medical case
-     * @param tags  an optional list of tags associated with the medical case
-     */
-    public Medicalcase createMedicalcase(String title, String... tags) {
-        Medicalcase medicalcase = new Medicalcase(title, this, tags);
-        medicalcases.get(Ownership.OWNER).add(medicalcase);
-        return medicalcase;
-    }
+//    /**
+//     * Creates a new medicalcase with the specified title and tags.
+//     * This method adds a new {@link Medicalcase} instance to the list of medicalcases. The current user is the owner of that medicalcase
+//     *
+//     * @param title the title of the medical case
+//     * @param tags  an optional list of tags associated with the medical case
+//     */
+//    public Medicalcase createMedicalcase(String title, String... tags) {
+//        Medicalcase medicalcase = new Medicalcase(title, this, tags);
+//        medicalcases.get(Ownership.OWNER).add(medicalcase);
+//        return medicalcase;
+//    }
 
     // Medicalcase methods ----------------------------------------------------
 
 
-    public void castVote(Medicalcase medicalcase, String answer, int percentage) {
-        isNotNull(medicalcase, "medicalcase");
-        if (!(medicalcases.get(Ownership.MEMBER).contains(medicalcase)))
-            throw new MedicalcaseException(STR."castVote(): user is not a member of this medicalcase");
-        medicalcase.castVote(this, answer, percentage);
-    }
-
-    public void removeContent(Medicalcase medicalcase, int index) {
-        isOwner(medicalcase);
-        medicalcase.removeContent(index);
-    }
-
-    public void removeContent(Medicalcase medicalcase, Content content) {
-        isOwner(medicalcase);
-        medicalcase.removeContent(content);
-    }
-
-    public void addContent(Medicalcase medicalcase, Content content, int index) {
-        isOwner(medicalcase);
-        medicalcase.addContent(content, index);
-
-    }
-
-    public void addContent(Medicalcase medicalcase, Content content) {
-        isOwner(medicalcase);
-        medicalcase.addContent(content);
-    }
-
-    public void removeVotingOption(Medicalcase medicalcase, Answer option) {
-        isOwner(medicalcase);
-        medicalcase.removeVotingOption(option);
-    }
-
-    public void addVotingOption(Medicalcase medicalcase, String option) {
-        isOwner(medicalcase);
-        medicalcase.addVotingOption(option);
-    }
-
-    public void publish(Medicalcase medicalcase) {
-        isOwner(medicalcase);
-        medicalcase.publish();
-    }
-
-    public void react(Medicalcase medicalcase) {
-        isNotNull(medicalcase, "medicalcase");
-        if (!(medicalcases.get(Ownership.MEMBER).contains(medicalcase)))
-            throw new MedicalcaseException(STR."react(): user is not a member of this medicalcase");
-        medicalcase.react(this);
-    }
-
-    public void addTag(Medicalcase medicalcase, String tag) {
-        isOwner(medicalcase);
-        medicalcase.addTag(tag);
-    }
-
-    public void setCorrectAnswer(Medicalcase medicalcase, Answer answer) {
-        isOwner(medicalcase);
-        medicalcase.setCorrectAnswer(answer);
-    }
-
-    public void setTags(Medicalcase medicalcase, String... tags) {
-        isOwner(medicalcase);
-        medicalcase.setTags(tags);
-    }
-
-    public void setTitle(Medicalcase medicalcase, String title) {
-        isOwner(medicalcase);
-        medicalcase.setTitle(title);
-    }
-
-    public void viewTotalPointsPerAnswer(Medicalcase medicalcase) {
-        isOwner(medicalcase);
-        medicalcase.viewTotalPointsPerAnswer();
-    }
-
-    public void viewAvgVotesPerAnswer(Medicalcase medicalcase) {
-        isOwner(medicalcase);
-        medicalcase.viewAvgVotesPerAnswer();
-    }
-
-    public void addMember(Medicalcase medicalcase, Doctor doctor) {
-        isOwner(medicalcase);
-        medicalcase.addMember(doctor);
-    }
-
-    private void isOwner(Medicalcase medicalcase) {
-        isNotNull(medicalcase, "medicalcase");
-        if (!(medicalcase.getOwner().equals(this)))
-            throw new MedicalcaseException(STR."action failed: user is not the owner of the medicalcase");
-    }
+//    public void castVote(Medicalcase medicalcase, String answer, int percentage) {
+//        isNotNull(medicalcase, "medicalcase");
+//        if (!(medicalcases.get(Ownership.MEMBER).contains(medicalcase)))
+//            throw new MedicalcaseException(STR."castVote(): user is not a member of this medicalcase");
+//        medicalcase.castVote(this, answer, percentage);
+//    }
+//
+//    public void removeContent(Medicalcase medicalcase, int index) {
+//        isOwner(medicalcase);
+//        medicalcase.removeContent(index);
+//    }
+//
+//    public void removeContent(Medicalcase medicalcase, Content content) {
+//        isOwner(medicalcase);
+//        medicalcase.removeContent(content);
+//    }
+//
+//    public void addContent(Medicalcase medicalcase, Content content, int index) {
+//        isOwner(medicalcase);
+//        medicalcase.addContent(content, index);
+//
+//    }
+//
+//    public void addContent(Medicalcase medicalcase, Content content) {
+//        isOwner(medicalcase);
+//        medicalcase.addContent(content);
+//    }
+//
+//    public void removeVotingOption(Medicalcase medicalcase, Answer option) {
+//        isOwner(medicalcase);
+//        medicalcase.removeVotingOption(option);
+//    }
+//
+//    public void addVotingOption(Medicalcase medicalcase, String option) {
+//        isOwner(medicalcase);
+//        medicalcase.addVotingOption(option);
+//    }
+//
+//    public void publish(Medicalcase medicalcase) {
+//        isOwner(medicalcase);
+//        medicalcase.publish();
+//    }
+//
+//    public void react(Medicalcase medicalcase) {
+//        isNotNull(medicalcase, "medicalcase");
+//        if (!(medicalcases.get(Ownership.MEMBER).contains(medicalcase)))
+//            throw new MedicalcaseException(STR."react(): user is not a member of this medicalcase");
+//        medicalcase.react(this);
+//    }
+//
+//    public void addTag(Medicalcase medicalcase, String tag) {
+//        isOwner(medicalcase);
+//        medicalcase.addTag(tag);
+//    }
+//
+//    public void setCorrectAnswer(Medicalcase medicalcase, Answer answer) {
+//        isOwner(medicalcase);
+//        medicalcase.setCorrectAnswer(answer);
+//    }
+//
+//    public void setTags(Medicalcase medicalcase, String... tags) {
+//        isOwner(medicalcase);
+//        medicalcase.setTags(tags);
+//    }
+//
+//    public void setTitle(Medicalcase medicalcase, String title) {
+//        isOwner(medicalcase);
+//        medicalcase.setTitle(title);
+//    }
+//
+//    public void viewTotalPointsPerAnswer(Medicalcase medicalcase) {
+//        isOwner(medicalcase);
+//        medicalcase.viewTotalPointsPerAnswer();
+//    }
+//
+//    public void viewAvgVotesPerAnswer(Medicalcase medicalcase) {
+//        isOwner(medicalcase);
+//        medicalcase.viewAvgVotesPerAnswer();
+//    }
+//
+//    public void addMember(Medicalcase medicalcase, Doctor doctor) {
+//        isOwner(medicalcase);
+//        medicalcase.addMember(doctor);
+//    }
+//
+//    private void isOwner(Medicalcase medicalcase) {
+//        isNotNull(medicalcase, "medicalcase");
+//        if (!(medicalcase.getOwner().equals(this)))
+//            throw new MedicalcaseException(STR."action failed: user is not the owner of the medicalcase");
+//    }
 }
